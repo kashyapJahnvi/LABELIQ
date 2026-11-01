@@ -1,0 +1,6 @@
+{
+  "name": "LABELIQ - AI Product Transparency & Ingredient Intelligence",
+  "description": "Know What's Inside. Choose What's Right. AI-powered product scanner decoding ingredients, nutritional facts, cosmetic safety, certifications, and expiry intelligence.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
