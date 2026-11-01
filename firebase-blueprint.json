@@ -1,0 +1,227 @@
+{
+  "entities": {
+    "ScanRecord": {
+      "title": "ScanRecord",
+      "description": "Scanned product transparency analysis record",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "description": "Unique scan identifier"
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "description": "Owner user UID"
+        },
+        "productName": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Name of the scanned product"
+        },
+        "brand": {
+          "type": "string",
+          "maxLength": 150,
+          "description": "Brand manufacturer of product"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["food", "cosmetic"],
+          "description": "Product category"
+        },
+        "score": {
+          "type": "number",
+          "description": "Overall suitability score from 0 to 100"
+        },
+        "scanDate": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "ISO timestamp of scan"
+        },
+        "imageUrl": {
+          "type": "string",
+          "maxLength": 2048,
+          "description": "Stored image URL or reference"
+        },
+        "barcode": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Optional detected EAN/UPC barcode"
+        },
+        "whatsGood": {
+          "type": "array",
+          "description": "List of positive highlights"
+        },
+        "whatToConsider": {
+          "type": "array",
+          "description": "List of flags and precautions"
+        },
+        "productData": {
+          "type": "object",
+          "description": "Complete clinical and nutritional breakdown"
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Creation timestamp"
+        }
+      },
+      "required": ["id", "userId", "productName", "brand", "category", "score"]
+    },
+    "FeedbackSubmission": {
+      "title": "FeedbackSubmission",
+      "description": "User feedback report or ticket",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "description": "Unique feedback identifier"
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "description": "UID of submitter"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["experience", "incorrect_analysis", "feature", "support", "inline_ingredient"],
+          "description": "Category of feedback"
+        },
+        "productName": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Associated product name"
+        },
+        "scanId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Associated scan ID"
+        },
+        "ingredientName": {
+          "type": "string",
+          "maxLength": 150,
+          "description": "Associated ingredient name"
+        },
+        "comment": {
+          "type": "string",
+          "maxLength": 5000,
+          "description": "User feedback comment text"
+        },
+        "attachmentUrl": {
+          "type": "string",
+          "maxLength": 2048,
+          "description": "Attachment image URL"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Submitted", "Under Review", "In Progress", "Resolved"],
+          "description": "Ticket status"
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Last update timestamp"
+        },
+        "adminNotes": {
+          "type": "string",
+          "maxLength": 2000,
+          "description": "Internal administrator notes"
+        },
+        "assignedAdmin": {
+          "type": "string",
+          "maxLength": 150,
+          "description": "Admin email assigned to ticket"
+        }
+      },
+      "required": ["id", "userId", "type", "comment", "status"]
+    },
+    "TutorialProgress": {
+      "title": "TutorialProgress",
+      "description": "User walkthrough tutorial state",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "description": "Owner user UID"
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Whether the walkthrough has been completed"
+        },
+        "completedAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Completion timestamp"
+        },
+        "lastStep": {
+          "type": "number",
+          "description": "Last active tutorial step index"
+        },
+        "dismissed": {
+          "type": "boolean",
+          "description": "Whether tutorial was dismissed"
+        },
+        "updatedAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Timestamp of last progress update"
+        }
+      },
+      "required": ["userId", "completed"]
+    },
+    "AdminProfile": {
+      "title": "AdminProfile",
+      "description": "Administrator authorization record",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Admin email"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "superadmin"],
+          "description": "Administrative role level"
+        },
+        "assignedAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Assignment timestamp"
+        }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/scans/{scanId}": {
+      "schema": "ScanRecord",
+      "description": "User-owned product scan history records"
+    },
+    "/feedback/{feedbackId}": {
+      "schema": "FeedbackSubmission",
+      "description": "Feedback and support tickets submitted by users"
+    },
+    "/users/{userId}/tutorial/progress": {
+      "schema": "TutorialProgress",
+      "description": "User onboarding tutorial state and progress"
+    },
+    "/admins/{userId}": {
+      "schema": "AdminProfile",
+      "description": "Registered administrators with review and oversight privileges"
+    }
+  }
+}

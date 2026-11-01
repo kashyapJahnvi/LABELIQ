@@ -1,0 +1,143 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -------------------------------------------------------------
+    // Global Default Deny Catch-All (Fortress Security Standard)
+    // -------------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // -------------------------------------------------------------
+    // Hardened Global Access Control Helpers
+    // -------------------------------------------------------------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSuperAdminEmail() {
+      return isSignedIn() &&
+        request.auth.token.email != null &&
+        request.auth.token.email.lower() == 'jahnvith80@gmail.com';
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        isSuperAdminEmail() ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // -------------------------------------------------------------
+    // Entity Validation Blueprints
+    // -------------------------------------------------------------
+    function isValidScanRecord(data, userId) {
+      return data.id is string && isValidId(data.id) &&
+        data.userId == userId &&
+        data.productName is string && data.productName.size() > 0 && data.productName.size() <= 200 &&
+        data.brand is string && data.brand.size() <= 150 &&
+        (data.category == 'food' || data.category == 'cosmetic') &&
+        data.score is number && data.score >= 0 && data.score <= 100;
+    }
+
+    function isValidFeedbackSubmission(data) {
+      return data.id is string && isValidId(data.id) &&
+        data.userId == request.auth.uid &&
+        data.type in ['experience', 'incorrect_analysis', 'feature', 'support', 'inline_ingredient'] &&
+        data.comment is string && data.comment.size() > 0 && data.comment.size() <= 5000 &&
+        data.status in ['Submitted', 'Under Review', 'In Progress', 'Resolved'];
+    }
+
+    function isValidTutorialProgress(data, userId) {
+      return data.userId == userId &&
+        data.completed is bool;
+    }
+
+    // -------------------------------------------------------------
+    // 1. User Scan History Collections (/users/{userId}/scans/{scanId})
+    // -------------------------------------------------------------
+    match /users/{userId}/scans/{scanId} {
+      allow get: if isOwner(userId) && isValidId(scanId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) &&
+        isValidId(scanId) &&
+        isValidScanRecord(incoming(), userId);
+      allow update: if isOwner(userId) &&
+        isValidId(scanId) &&
+        isValidScanRecord(incoming(), userId) &&
+        incoming().userId == existing().userId;
+      allow delete: if isOwner(userId) && isValidId(scanId);
+    }
+
+    // -------------------------------------------------------------
+    // 2. Feedback & Ticket System (/feedback/{feedbackId})
+    // -------------------------------------------------------------
+    match /feedback/{feedbackId} {
+      allow get: if isSignedIn() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      ) && isValidId(feedbackId);
+
+      allow list: if isSignedIn() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+
+      allow create: if isSignedIn() &&
+        isValidId(feedbackId) &&
+        isValidFeedbackSubmission(incoming()) &&
+        incoming().userId == request.auth.uid &&
+        incoming().status == 'Submitted';
+
+      allow update: if isSignedIn() && (
+        // Admin update: can modify status, admin notes, assigned admin
+        (isAdmin() && isValidId(feedbackId) &&
+          incoming().diff(existing()).affectedKeys().hasAny(['status', 'adminNotes', 'assignedAdmin', 'updatedAt'])) ||
+        // User update: can only update comment or ratings before review
+        (existing().userId == request.auth.uid &&
+          existing().status == 'Submitted' &&
+          isValidFeedbackSubmission(incoming()) &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['comment', 'ratings', 'updatedAt', 'attachmentUrl']))
+      );
+
+      allow delete: if isAdmin() && isValidId(feedbackId);
+    }
+
+    // -------------------------------------------------------------
+    // 3. User Tutorial Progress (/users/{userId}/tutorial/{docId})
+    // -------------------------------------------------------------
+    match /users/{userId}/tutorial/{docId} {
+      allow get: if isOwner(userId) && isValidId(docId);
+      allow list: if isOwner(userId);
+      allow create, update: if isOwner(userId) &&
+        isValidId(docId) &&
+        isValidTutorialProgress(incoming(), userId);
+      allow delete: if isOwner(userId) && isValidId(docId);
+    }
+
+    // -------------------------------------------------------------
+    // 4. Admin Privileges Registry (/admins/{adminId})
+    // -------------------------------------------------------------
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && isValidId(adminId);
+      allow list: if isAdmin();
+      // Writes are locked to system operations only
+      allow write: if false;
+    }
+  }
+}

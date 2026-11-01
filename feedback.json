@@ -1,0 +1,25 @@
+[
+  {
+    "type": "experience",
+    "comment": "Great ingredient detection!",
+    "id": "fb_1793499808026_3xif",
+    "userId": "UVtHwrGofqdKLzAWodk0Zf1ePio2",
+    "status": "Under Review",
+    "createdAt": "2026-11-01T02:23:28.026Z",
+    "adminNotes": "Reviewed by Jahnvi",
+    "updatedAt": "2026-11-01T02:23:29.038Z"
+  },
+  {
+    "type": "experience",
+    "comment": "Audit test feedback",
+    "ratings": {
+      "overall": 5
+    },
+    "id": "fb_1793497621581_hed8",
+    "userId": "user_cgc_mohali",
+    "status": "In Progress",
+    "createdAt": "2026-11-01T01:47:01.581Z",
+    "adminNotes": "Reviewed by security audit",
+    "updatedAt": "2026-11-01T01:47:01.641Z"
+  }
+]
